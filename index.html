@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Freedom Number Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #14213a;
+    --muted: #55627d;
+    --blue: #3b82f6;
+    --teal: #14b8a6;
+    --orange: #f59e0b;
+    --purple: #8b5cf6;
+    --btn-top: #4880e7;
+    --btn-bot: #275bbb;
+    --glass: rgba(255,255,255,.52);
+    --glass-strong: rgba(255,255,255,.7);
+    --glass-edge: rgba(255,255,255,.85);
+    --shadow: 0 18px 40px -16px rgba(32,52,96,.16);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Instrument Sans", -apple-system, system-ui, "SF Pro Display", "Segoe UI", sans-serif;
+    color: var(--ink);
+    background-color: #e9eef7;
+    background-image:
+      radial-gradient(60vmax 60vmax at 8% 6%, rgba(96,165,250,.55), transparent 60%),
+      radial-gradient(55vmax 55vmax at 95% 18%, rgba(167,139,250,.45), transparent 60%),
+      radial-gradient(60vmax 60vmax at 12% 98%, rgba(45,212,191,.40), transparent 60%),
+      radial-gradient(50vmax 50vmax at 95% 95%, rgba(251,191,36,.35), transparent 60%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+
+  .card {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(26px) saturate(1.8);
+    backdrop-filter: blur(26px) saturate(1.8);
+    border: 1px solid var(--glass-edge);
+    border-radius: 28px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(255,255,255,.08), var(--shadow);
+    padding: 32px;
+  }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  h1 { font-size: clamp(32px, 6vw, 46px); line-height: 1.05; letter-spacing: -.02em; font-weight: 700; margin: 0 0 14px; }
+  h2 { font-size: 26px; line-height: 1.15; letter-spacing: -.015em; font-weight: 700; margin: 0 0 8px; }
+  p.lead { font-size: 17px; line-height: 1.5; color: var(--muted); margin: 0 0 24px; }
+  .hint { font-size: 14px; color: var(--muted); line-height: 1.45; margin: 0; }
+
+  /* progress */
+  .progress { display: flex; gap: 8px; margin: 0 0 28px; }
+  .progress span { flex: 1; height: 6px; border-radius: 99px; background: rgba(20,33,58,.1); overflow: hidden; position: relative; }
+  .progress span::after { content: ""; position: absolute; inset: 0; transform: scaleX(0); transform-origin: left; transition: transform .4s ease; background: var(--c); border-radius: inherit; }
+  .progress span.done::after { transform: scaleX(1); }
+  .progress span:nth-child(1) { --c: var(--blue); }
+  .progress span:nth-child(2) { --c: var(--teal); }
+  .progress span:nth-child(3) { --c: var(--orange); }
+  .progress span:nth-child(4) { --c: var(--purple); }
+
+  /* fields */
+  .field { margin: 0 0 18px; }
+  label.lbl { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: none; }
+  .input-wrap { position: relative; }
+  .input-wrap .pre { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 500; pointer-events: none; }
+  .input-wrap .suf { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  input[type=text] {
+    width: 100%; font: inherit; font-size: 17px; color: var(--ink);
+    background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 999px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+    padding: 15px 20px; outline: none; transition: box-shadow .2s, border-color .2s, background .2s;
+  }
+  input[type=text].money { padding-left: 44px; }
+  input[type=text].has-suf { padding-right: 76px; }
+  input[type=text]::placeholder { color: #8d98b0; }
+  input[type=text]:focus { background: rgba(255,255,255,.8); border-color: var(--btn-top); box-shadow: 0 0 0 4px rgba(72,128,231,.22); }
+  input.invalid { border-color: #e5484d !important; }
+  .err { color: #c2343a; font-size: 14px; margin: 8px 0 0 20px; min-height: 0; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; gap: 0; } .card { padding: 24px 20px; } }
+
+  /* currency pills */
+  .pills { display: inline-flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.5); border: 1px solid var(--glass-edge); margin: 0 0 20px; }
+  .pills button { font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); background: transparent; border: 0; padding: 7px 16px; border-radius: 999px; cursor: pointer; }
+  .pills button[aria-pressed=true] { color: #fff; background: linear-gradient(var(--btn-top), var(--btn-bot)); }
+
+  /* buttons */
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+  .btn {
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; border-radius: 999px; padding: 14px 28px;
+    transition: transform .15s, box-shadow .2s;
+  }
+  .btn-primary {
+    color: #fff; background: linear-gradient(var(--btn-top), var(--btn-bot)); border: 1px solid #82a9ef;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 10px 24px -10px rgba(47,111,228,.7);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 14px 28px -10px rgba(47,111,228,.8); }
+  .btn-ghost { color: var(--ink); background: var(--glass-strong); border: 1px solid var(--glass-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+  .btn:focus-visible, .pills button:focus-visible, input[type=range]:focus-visible { outline: 3px solid rgba(72,128,231,.5); outline-offset: 2px; }
+
+  .step { display: none; }
+  .step.active { display: block; animation: rise .35s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .step.active { animation: none; } .progress span::after { transition: none; } }
+
+  /* results */
+  .results { display: none; }
+  .results.active { display: block; }
+  .results .head { margin: 0 0 20px; padding: 0 4px; }
+  .stack { display: grid; gap: 14px; }
+  .res {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(26px) saturate(1.8); backdrop-filter: blur(26px) saturate(1.8);
+    border: 1px solid var(--glass-edge); border-radius: 24px; padding: 22px 24px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--shadow);
+    animation: rise .45s ease both;
+  }
+  .res:nth-child(2) { animation-delay: .06s; } .res:nth-child(3) { animation-delay: .12s; } .res:nth-child(4) { animation-delay: .18s; }
+  .res .tag { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .res .big { font-size: clamp(30px, 6vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .res .sub { font-size: 14px; color: var(--muted); line-height: 1.45; margin: 8px 0 0; }
+  .res.hero { background: linear-gradient(160deg, rgba(255,255,255,.7), rgba(219,232,255,.55)); border-color: #fff; }
+  .res.hero .big { font-size: clamp(36px, 8vw, 54px); background: linear-gradient(var(--btn-top), var(--btn-bot)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .slider-top { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 10px; font-size: 15px; font-weight: 600; }
+  .slider-top .rate { color: var(--purple); font-size: 22px; font-variant-numeric: tabular-nums; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px; outline: none; margin: 6px 0;
+    background: linear-gradient(90deg, var(--purple) var(--fill,50%), rgba(20,33,58,.12) var(--fill,50%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid var(--glass-edge); box-shadow: 0 4px 12px rgba(32,52,96,.3), 0 0 0 5px rgba(139,92,246,.25); cursor: grab; }
+  input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid var(--glass-edge); box-shadow: 0 4px 12px rgba(32,52,96,.3), 0 0 0 5px rgba(139,92,246,.25); cursor: grab; }
+  .ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .split { display: flex; height: 10px; border-radius: 99px; overflow: hidden; margin: 18px 0 8px; background: rgba(20,33,58,.1); }
+  .split i { display: block; height: 100%; transition: width .25s ease; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+  .legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+
+  /* income table */
+  .tbl-wrap { margin-top: 16px; border-radius: 16px; background: rgba(255,255,255,.5); border: 1px solid var(--glass-edge); overflow-x: auto; }
+  table.inc { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  table.inc th, table.inc td { padding: 11px 14px; text-align: right; white-space: nowrap; }
+  table.inc th:first-child, table.inc td:first-child { text-align: left; }
+  table.inc thead th { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid rgba(20,33,58,.1); }
+  table.inc tbody td { border-bottom: 1px solid rgba(20,33,58,.06); }
+  table.inc tbody td.zero { color: #8d98b0; }
+  table.inc tfoot td { font-weight: 700; background: rgba(20,184,166,.1); border-bottom: 0; }
+
+  /* growth chart */
+  .chart-box { margin-top: 20px; }
+  .readout { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; font-size: 13px; color: var(--muted); margin: 0 0 6px; min-height: 22px; }
+  .readout strong { color: var(--ink); font-size: 14px; font-weight: 700; }
+  .readout b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #chart { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
+  #chart text { font-family: inherit; font-size: 11px; fill: #55627d; }
+  #chart .grid { stroke: rgba(20,33,58,.1); stroke-width: 1; }
+
+  details.assume { margin-top: 14px; }
+  details.assume summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--muted); padding: 10px 6px; list-style: none; }
+  details.assume summary::-webkit-details-marker { display: none; }
+  details.assume summary::after { content: " +"; }
+  details.assume[open] summary::after { content: " −"; }
+  details.assume .res { margin-top: 6px; }
+
+  .fine { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 20px 6px 0; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <!-- QUESTIONS -->
+  <section class="card" id="form" aria-live="polite">
+    <p class="eyebrow">Retirement planning for Filipino professionals</p>
+    <h1>Find Your Freedom Number</h1>
+    <p class="lead">Four quick questions to see how much you need invested to live on your own terms, and what to put away each month to get there.</p>
+
+    <div class="progress" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <!-- Step 1 -->
+    <div class="step active" data-step="1">
+      <h2>What income do you want each month?</h2>
+      <p class="hint" style="margin-bottom:18px">In today's money. What would a good life cost you per month?</p>
+      <div class="pills" role="group" aria-label="Currency">
+        <button type="button" data-cur="₱" aria-pressed="true">₱ PHP</button>
+        <button type="button" data-cur="$" aria-pressed="false">$ USD</button>
+      </div>
+      <div class="field">
+        <label class="lbl" for="target"><span class="dot"></span>Target monthly income</label>
+        <div class="input-wrap"><span class="pre cur">₱</span>
+          <input type="text" id="target" class="money" inputmode="numeric" autocomplete="off" placeholder="100,000"></div>
+        <p class="err" id="err1"></p>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step" data-step="2">
+      <h2>What other income will you have after retirement?</h2>
+      <p class="hint" style="margin-bottom:18px">Monthly amounts in today's money. Leave blank or enter 0 for anything that doesn't apply.</p>
+      <div class="row2">
+        <div class="field"><label class="lbl" for="ss"><span class="dot" style="background:var(--teal)"></span>Social security</label>
+          <div class="input-wrap"><span class="pre cur">₱</span><input type="text" id="ss" class="money other" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+        <div class="field"><label class="lbl" for="rent"><span class="dot" style="background:var(--teal)"></span>Rental income</label>
+          <div class="input-wrap"><span class="pre cur">₱</span><input type="text" id="rent" class="money other" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+        <div class="field"><label class="lbl" for="biz"><span class="dot" style="background:var(--teal)"></span>Business</label>
+          <div class="input-wrap"><span class="pre cur">₱</span><input type="text" id="biz" class="money other" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+        <div class="field"><label class="lbl" for="oth"><span class="dot" style="background:var(--teal)"></span>Others</label>
+          <div class="input-wrap"><span class="pre cur">₱</span><input type="text" id="oth" class="money other" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step" data-step="3">
+      <h2>How old are you now?</h2>
+      <p class="hint" style="margin-bottom:18px">This sets how many years you have to build your freedom number.</p>
+      <div class="field">
+        <label class="lbl" for="age"><span class="dot" style="background:var(--orange)"></span>Age now</label>
+        <div class="input-wrap"><input type="text" id="age" class="has-suf" inputmode="numeric" autocomplete="off" placeholder="35" maxlength="2"><span class="suf">years</span></div>
+        <p class="err" id="err3"></p>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step" data-step="4">
+      <h2>At what age do you want to retire?</h2>
+      <p class="hint" style="margin-bottom:18px">The age you want work to become optional.</p>
+      <div class="field">
+        <label class="lbl" for="ret"><span class="dot" style="background:var(--purple)"></span>Retirement age</label>
+        <div class="input-wrap"><input type="text" id="ret" class="has-suf" inputmode="numeric" autocomplete="off" placeholder="55" maxlength="2"><span class="suf">years</span></div>
+        <p class="err" id="err4"></p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-ghost" id="back" hidden>Back</button>
+      <button type="button" class="btn btn-primary" id="next">Continue</button>
+      <span class="hint" id="stepLabel">Step 1 of 4</span>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results" id="results" aria-live="polite">
+    <div class="head">
+      <p class="eyebrow">Your results</p>
+      <h1 id="resTitle">Your Freedom Number</h1>
+      <p class="lead" id="resLead" style="margin-bottom:0"></p>
+    </div>
+
+    <div class="stack">
+      <div class="res">
+        <p class="tag"><span class="dot" style="background:var(--blue)"></span>1 · Inflation-adjusted target income</p>
+        <div class="big" id="r1">–</div>
+        <p class="sub" id="r1sub"></p>
+      </div>
+
+      <div class="res">
+        <p class="tag"><span class="dot" style="background:var(--teal)"></span>2 · After your other income sources</p>
+        <div class="big" id="r2">–</div>
+        <p class="sub" id="r2sub"></p>
+        <div class="tbl-wrap">
+          <table class="inc">
+            <thead><tr><th>Income source</th><th>Declared (today)</th><th>Inflation adjusted</th></tr></thead>
+            <tbody id="incBody"></tbody>
+            <tfoot><tr><td>Total other income</td><td id="incTotD"></td><td id="incTotA"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="res hero">
+        <p class="tag"><span class="dot" style="background:var(--orange)"></span>3 · Your Freedom Number</p>
+        <div class="big" id="r3">–</div>
+        <p class="sub" id="r3sub"></p>
+      </div>
+
+      <div class="res">
+        <p class="tag"><span class="dot" style="background:var(--purple)"></span>4 · Monthly investment needed</p>
+        <div class="big" id="r4">–</div>
+        <p class="sub" id="r4sub"></p>
+        <div class="slider-top"><span>Expected annual return</span><span class="rate" id="rateLbl">7%</span></div>
+        <input type="range" id="rate" min="4" max="10" step="0.5" value="7" aria-label="Expected annual return">
+        <div class="ticks"><span>4%</span><span>5%</span><span>6%</span><span>7%</span><span>8%</span><span>9%</span><span>10%</span></div>
+        <div class="chart-box">
+          <div class="readout" id="readout" aria-live="off"></div>
+          <svg id="chart" viewBox="0 0 640 260" role="img" aria-label="Chart of your investment balance growing from now until retirement, compared with the money you contribute"></svg>
+        </div>
+        <div class="legend" style="margin-top:10px">
+          <span style="--c:var(--blue)">Your contributions <b id="lgC"></b></span>
+          <span style="--c:var(--purple)">Investment growth <b id="lgG"></b></span>
+        </div>
+      </div>
+    </div>
+
+    <details class="assume">
+      <summary>Adjust assumptions</summary>
+      <div class="res">
+        <div class="slider-top" style="margin-top:0"><span>Inflation per year</span><span class="rate" id="infLbl" style="color:var(--blue)">3%</span></div>
+        <input type="range" id="inf" min="0" max="10" step="0.5" value="3" aria-label="Inflation rate" style="--c:var(--blue)">
+        <div class="slider-top"><span>Safe withdrawal rate</span><span class="rate" id="wdLbl" style="color:var(--teal)">4%</span></div>
+        <input type="range" id="wd" min="2.5" max="6" step="0.25" value="4" aria-label="Withdrawal rate">
+        <p class="hint" style="margin-top:12px">A 4% withdrawal rate is the classic rule of thumb: your freedom number is 25 times your yearly shortfall. Lower is more conservative.</p>
+      </div>
+    </details>
+
+    <div class="actions" style="padding:0 4px">
+      <button type="button" class="btn btn-primary" id="edit">Edit my answers</button>
+      <button type="button" class="btn btn-ghost" id="restart">Start over</button>
+    </div>
+
+    <p class="fine">This calculator is an educational estimate, not financial advice. It assumes your other income is entered in today's money and rises with inflation, that contributions are made at the end of each month, and that returns are steady. Real markets are not.</p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { step: 1, cur: '₱' };
+  var TOTAL = 4;
+
+  /* ---------- helpers ---------- */
+  function num(el) { var v = parseFloat(String(el.value).replace(/[^0-9.]/g, '')); return isNaN(v) ? 0 : v; }
+  function fmt(n) { return state.cur + Math.round(n).toLocaleString('en-US'); }
+  function compact(n) {
+    var a = Math.abs(n);
+    if (a >= 1e9) return state.cur + (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B';
+    if (a >= 1e6) return state.cur + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+    return fmt(n);
+  }
+  function pct(x) { return Math.round(x * 10000) / 100; }
+  function setFill(r) { var p = (r.value - r.min) / (r.max - r.min) * 100; r.style.setProperty('--fill', p + '%'); }
+
+  // live thousands separators on money inputs
+  document.querySelectorAll('input.money').forEach(function (el) {
+    el.addEventListener('input', function () {
+      var raw = el.value.replace(/[^0-9]/g, '');
+      el.value = raw ? Number(raw).toLocaleString('en-US') : '';
+      el.classList.remove('invalid');
+    });
+  });
+  ['age', 'ret'].forEach(function (id) {
+    $(id).addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); this.classList.remove('invalid'); });
+  });
+
+  // currency
+  document.querySelectorAll('.pills button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.cur = b.dataset.cur;
+      document.querySelectorAll('.pills button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.querySelectorAll('.cur').forEach(function (s) { s.textContent = state.cur; });
+      if ($('results').classList.contains('active')) compute();
+    });
+  });
+
+  /* ---------- wizard ---------- */
+  function show(step) {
+    state.step = step;
+    document.querySelectorAll('.step').forEach(function (s) { s.classList.toggle('active', +s.dataset.step === step); });
+    document.querySelectorAll('.progress span').forEach(function (s, i) { s.classList.toggle('done', i < step); });
+    $('back').hidden = step === 1;
+    $('next').textContent = step === TOTAL ? 'Show my Freedom Number' : 'Continue';
+    $('stepLabel').textContent = 'Step ' + step + ' of ' + TOTAL;
+    var first = document.querySelector('.step.active input');
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  function fail(inputId, errId, msg) {
+    var i = $(inputId); i.classList.add('invalid'); i.focus();
+    if (errId) $(errId).textContent = msg;
+    return false;
+  }
+
+  function validate(step) {
+    if (step === 1) {
+      $('err1').textContent = '';
+      if (num($('target')) <= 0) return fail('target', 'err1', 'Enter the monthly income you want.');
+    }
+    if (step === 3) {
+      $('err3').textContent = '';
+      var a = num($('age'));
+      if (a < 16 || a > 90) return fail('age', 'err3', 'Enter an age between 16 and 90.');
+    }
+    if (step === 4) {
+      $('err4').textContent = '';
+      var r = num($('ret')), a2 = num($('age'));
+      if (r <= a2) return fail('ret', 'err4', 'Retirement age needs to be higher than your age now (' + a2 + ').');
+      if (r > 100) return fail('ret', 'err4', 'Enter a realistic retirement age.');
+    }
+    return true;
+  }
+
+  $('next').addEventListener('click', function () {
+    if (!validate(state.step)) return;
+    if (state.step < TOTAL) show(state.step + 1);
+    else { $('form').style.display = 'none'; $('results').classList.add('active'); compute(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+  $('back').addEventListener('click', function () { show(state.step - 1); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && $('form').style.display !== 'none' && e.target.tagName === 'INPUT' && e.target.type === 'text') { e.preventDefault(); $('next').click(); }
+  });
+  $('edit').addEventListener('click', function () { $('results').classList.remove('active'); $('form').style.display = ''; show(1); window.scrollTo({ top: 0 }); });
+  $('restart').addEventListener('click', function () {
+    document.querySelectorAll('input[type=text]').forEach(function (i) { i.value = ''; });
+    $('rate').value = 7; $('inf').value = 3; $('wd').value = 4;
+    $('edit').click();
+  });
+
+  /* ---------- math ---------- */
+  function compute() {
+    var target = num($('target'));
+    var other = num($('ss')) + num($('rent')) + num($('biz')) + num($('oth'));
+    var age = num($('age')), ret = num($('ret'));
+    var years = ret - age, months = years * 12;
+    var inf = +$('inf').value / 100, wd = +$('wd').value / 100, rate = +$('rate').value / 100;
+
+    var factor = Math.pow(1 + inf, years);
+    var targetFuture = target * factor;            // 1
+    var otherFuture = other * factor;
+    var gapMonthly = Math.max(0, targetFuture - otherFuture); // 2
+    var freedom = gapMonthly * 12 / wd;            // 3
+
+    var r = rate / 12;
+    var pmt = freedom === 0 ? 0 : (r === 0 ? freedom / months : freedom * r / (Math.pow(1 + r, months) - 1)); // 4
+    var contrib = pmt * months, growth = Math.max(0, freedom - contrib);
+
+    // income breakdown table
+    var srcs = [['Social security', 'ss'], ['Rental income', 'rent'], ['Business', 'biz'], ['Others', 'oth']];
+    $('incBody').innerHTML = srcs.map(function (s) {
+      var v = num($(s[1])), z = v === 0 ? ' class="zero"' : '';
+      return '<tr><td>' + s[0] + '</td><td' + z + '>' + (v ? fmt(v) : '–') + '</td><td' + z + '>' + (v ? fmt(v * factor) : '–') + '</td></tr>';
+    }).join('');
+    $('incTotD').textContent = fmt(other);
+    $('incTotA').textContent = fmt(otherFuture);
+
+    $('rateLbl').textContent = (+$('rate').value) + '%';
+    $('infLbl').textContent = (+$('inf').value) + '%';
+    $('wdLbl').textContent = (+$('wd').value) + '%';
+    ['rate', 'inf', 'wd'].forEach(function (id) { setFill($(id)); });
+
+    $('resLead').textContent = 'Retiring at ' + ret + ' gives you ' + years + ' year' + (years === 1 ? '' : 's') + ' to build it.';
+
+    $('r1').textContent = fmt(targetFuture) + ' / month';
+    $('r1sub').textContent = fmt(target) + ' today is worth about ' + fmt(targetFuture) + ' a month in ' + years + ' years, at ' + pct(inf) + '% inflation.';
+
+    $('r2').textContent = fmt(gapMonthly) + ' / month';
+    $('r2sub').textContent = other > 0
+      ? 'Your other income (' + fmt(other) + ' today, about ' + fmt(otherFuture) + ' then) covers part of it. This is what your investments must produce.'
+      : 'You listed no other income, so your investments need to cover all of it.';
+
+    if (freedom === 0) {
+      $('r3').textContent = fmt(0);
+      $('r3sub').textContent = 'Your other income already covers your target. Nothing extra needs to be invested.';
+      $('r4').textContent = fmt(0) + ' / month';
+      $('r4sub').textContent = 'No extra monthly investing required for this goal.';
+      $('chart').innerHTML = ''; $('readout').textContent = 'Nothing to chart: no investing needed.';
+      $('lgC').textContent = fmt(0); $('lgG').textContent = fmt(0);
+      return;
+    }
+
+    $('r3').textContent = compact(freedom);
+    $('r3sub').textContent = fmt(freedom) + ' invested, withdrawing ' + pct(wd) + '% a year (' + fmt(gapMonthly * 12) + ' ÷ ' + pct(wd) + '%), gives you ' + fmt(gapMonthly) + ' a month.';
+
+    $('r4').textContent = fmt(pmt) + ' / month';
+    $('r4sub').textContent = 'Invest this every month for ' + years + ' years (' + months + ' months) at ' + pct(rate) + '% a year to reach your freedom number.';
+    $('lgC').textContent = compact(contrib);
+    $('lgG').textContent = compact(growth);
+    drawChart(age, years, pmt, r, freedom);
+  }
+
+  /* ---------- growth chart ---------- */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function drawChart(age, years, pmt, r, top) {
+    var W = 640, H = 260, L = 58, R = 14, T = 12, B = 30;
+    var pw = W - L - R, ph = H - T - B;
+    var pts = [];
+    for (var y = 0; y <= years; y++) {
+      var m = y * 12;
+      pts.push({ age: age + y, contrib: pmt * m, bal: r === 0 ? pmt * m : pmt * (Math.pow(1 + r, m) - 1) / r });
+    }
+    var X = function (i) { return L + (years === 0 ? 0 : i / years * pw); };
+    var Y = function (v) { return T + ph - v / top * ph; };
+    var line = function (k) { return pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p[k]).toFixed(1); }).join(''); };
+    var area = function (k) { return line(k) + 'L' + X(years).toFixed(1) + ' ' + Y(0) + 'L' + X(0) + ' ' + Y(0) + 'Z'; };
+
+    var s = '<defs><linearGradient id="gBal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".45"/><stop offset="1" stop-color="#8b5cf6" stop-opacity=".05"/></linearGradient>' +
+            '<linearGradient id="gCon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".5"/><stop offset="1" stop-color="#3b82f6" stop-opacity=".08"/></linearGradient></defs>';
+    for (var g = 0; g <= 4; g++) {
+      var gv = top * g / 4, gy = Y(gv);
+      s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + gy + '" y2="' + gy + '"/><text x="' + (L - 8) + '" y="' + (gy + 4) + '" text-anchor="end">' + compact(gv) + '</text>';
+    }
+    var nt = Math.min(years, 5);
+    for (var t = 0; t <= nt; t++) {
+      var idx = Math.round(years * t / nt);
+      s += '<text x="' + X(idx) + '" y="' + (H - 8) + '" text-anchor="' + (t === 0 ? 'start' : t === nt ? 'end' : 'middle') + '">Age ' + pts[idx].age + '</text>';
+    }
+    s += '<path d="' + area('bal') + '" fill="url(#gBal)"/><path d="' + line('bal') + '" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-linejoin="round"/>' +
+         '<path d="' + area('contrib') + '" fill="url(#gCon)"/><path d="' + line('contrib') + '" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round"/>' +
+         '<g id="cur" style="display:none"><line id="curL" y1="' + T + '" y2="' + (T + ph) + '" stroke="#14213a" stroke-opacity=".35" stroke-dasharray="3 3"/>' +
+         '<circle id="curB" r="5" fill="#fff" stroke="#8b5cf6" stroke-width="2.5"/><circle id="curC" r="5" fill="#fff" stroke="#3b82f6" stroke-width="2.5"/></g>';
+    var svg = $('chart');
+    svg.innerHTML = s;
+
+    function readout(i) {
+      var p = pts[i];
+      $('readout').innerHTML = '<strong>Age ' + p.age + (i === years ? ' · retirement' : '') + '</strong>' +
+        '<span>Balance <b>' + compact(p.bal) + '</b></span><span>Contributed <b>' + compact(p.contrib) + '</b></span><span>Growth <b>' + compact(Math.max(0, p.bal - p.contrib)) + '</b></span>';
+    }
+    function move(e) {
+      var rect = svg.getBoundingClientRect();
+      var vx = (e.clientX - rect.left) / rect.width * W;
+      var i = Math.max(0, Math.min(years, Math.round((vx - L) / pw * years)));
+      var x = X(i);
+      $('cur').style.display = '';
+      $('curL').setAttribute('x1', x); $('curL').setAttribute('x2', x);
+      $('curB').setAttribute('cx', x); $('curB').setAttribute('cy', Y(pts[i].bal));
+      $('curC').setAttribute('cx', x); $('curC').setAttribute('cy', Y(pts[i].contrib));
+      readout(i);
+    }
+    svg.onpointermove = move; svg.onpointerdown = move;
+    svg.onpointerleave = function () { $('cur').style.display = 'none'; readout(years); };
+    readout(years);
+  }
+
+  ['rate', 'inf', 'wd'].forEach(function (id) { $(id).addEventListener('input', compute); setFill($(id)); });
+  show(1);
+})();
+</script>
+</body>
+</html>
